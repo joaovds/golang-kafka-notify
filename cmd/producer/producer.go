@@ -1,18 +1,14 @@
 package main
 
 import (
-	"fmt"
-	"kafka-notify/pkg/models"
+  "fmt"
+  "kafka-notify/internals/configuration"
+  "kafka-notify/internals/infra/kafka"
+  "kafka-notify/pkg/models"
   "log"
-	"net/http"
+  "net/http"
 
-	"github.com/gin-gonic/gin"
-)
-
-const (
-  ProducerPort = ":8080"
-  KafkaBroker = "localhost:9092"
-  KafkaTopic = "notifications"
+  "github.com/gin-gonic/gin"
 )
 
 func main () {
@@ -23,6 +19,12 @@ func main () {
     { ID: 4, Name: "Jane" },
   }
 
+  producer, err := kafka.SetupProducer()
+  if err != nil {
+    log.Fatalf("failed to setup kafka producer: %v", err)
+  }
+  defer producer.Close()
+
   gin.SetMode(gin.ReleaseMode)
   router := gin.Default()
 
@@ -30,9 +32,9 @@ func main () {
     c.JSON(http.StatusOK, users)
   })
 
-  fmt.Printf("Kafka PRODUCER running at http://localhost%s\n", ProducerPort)
+  fmt.Printf("Kafka PRODUCER running at http://localhost%s\n", configuration.ProducerPort)
 
-  if err := router.Run(ProducerPort); err != nil {
+  if err := router.Run(configuration.ProducerPort); err != nil {
     log.Printf("Failed to start server: %v\n", err)
   }
 }
